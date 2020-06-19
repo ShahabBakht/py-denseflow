@@ -7,6 +7,7 @@ import argparse
 from IPython import embed #to debug
 import skvideo.io
 import scipy.misc
+import imageio
 
 
 def ToImg(raw_flow,bound):
@@ -37,20 +38,20 @@ def save_flows(flows,image,save_dir,num,bound):
     #rescale to 0~255 with the bound setting
     flow_x=ToImg(flows[...,0],bound)
     flow_y=ToImg(flows[...,1],bound)
-    if not os.path.exists(os.path.join(data_root,new_dir,save_dir)):
-        os.makedirs(os.path.join(data_root,new_dir,save_dir))
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
     #save the image
-    save_img=os.path.join(data_root,new_dir,save_dir,'img_{:05d}.jpg'.format(num))
-    scipy.misc.imsave(save_img,image)
+    save_img=os.path.join(save_dir,'img_{:05d}.jpg'.format(num))
+    imageio.imwrite(save_img,image.astype(np.uint8))
 
     #save the flows
-    save_x=os.path.join(data_root,new_dir,save_dir,'flow_x_{:05d}.jpg'.format(num))
-    save_y=os.path.join(data_root,new_dir,save_dir,'flow_y_{:05d}.jpg'.format(num))
-    flow_x_img=Image.fromarray(flow_x)
-    flow_y_img=Image.fromarray(flow_y)
-    scipy.misc.imsave(save_x,flow_x_img)
-    scipy.misc.imsave(save_y,flow_y_img)
+    save_x=os.path.join(save_dir,'flow_x_{:05d}.jpg'.format(num))
+    save_y=os.path.join(save_dir,'flow_y_{:05d}.jpg'.format(num))
+    flow_x_img=Image.fromarray(flow_x.astype(np.uint8))
+    flow_y_img=Image.fromarray(flow_y.astype(np.uint8))
+    imageio.imwrite(save_x,flow_x_img)
+    imageio.imwrite(save_y,flow_y_img)
     return 0
 
 def dense_flow(augs):
@@ -64,23 +65,24 @@ def dense_flow(augs):
     :return: no returns
     '''
     video_name,save_dir,step,bound=augs
-    video_path=os.path.join(videos_root,video_name.split('_')[1],video_name)
+    video_path=video_name #os.path.join(videos_root,video_name.split('_')[1],video_name)
 
     # provide two video-read methods: cv2.VideoCapture() and skvideo.io.vread(), both of which need ffmpeg support
 
-    # videocapture=cv2.VideoCapture(video_path)
-    # if not videocapture.isOpened():
-    #     print 'Could not initialize capturing! ', video_name
-    #     exit()
+#     videocapture=cv2.VideoCapture(video_path)
+#     if not videocapture.isOpened():
+#         print 'Could not initialize capturing! ', video_name
+#         exit()
     try:
         videocapture=skvideo.io.vread(video_path)
     except:
-        print '{} read error! '.format(video_name)
+        print('{} read error! '.format(video_name)) 
         return 0
-    print video_name
+#     videocapture=skvideo.io.vread(video_path)
+    print (video_name,type(videocapture))
     # if extract nothing, exit!
     if videocapture.sum()==0:
-        print 'Could not initialize capturing',video_name
+        print('Could not initialize capturing',video_name)
         exit()
     len_frame=len(videocapture)
     frame_num=0
@@ -175,9 +177,9 @@ if __name__ =='__main__':
     video_list=video_list[s_:e_]
 
     len_videos=min(e_-s_,13320-s_) # if we choose the ucf101
-    print 'find {} videos.'.format(len_videos)
+    print('find {} videos.'.format(len_videos))
     flows_dirs=[video.split('.')[0] for video in video_list]
-    print 'get videos list done! '
+    print('get videos list done! ') 
 
     pool=Pool(num_workers)
     if mode=='run':
